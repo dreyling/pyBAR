@@ -244,7 +244,7 @@ class M26TelescopeScan(Fei4RunBase):
         if kwargs:
             self.set_scan_parameters(**kwargs)
         self.fifo_readout.start(reset_sram_fifo=False, clear_buffer=True, callback=self.handle_data, errback=self.handle_err, no_data_timeout=self.no_data_timeout)
-        #self.dut['TDC']['ENABLE'] = self.enable_tdc
+        #self.tdc['ENABLE'] = self.enable_tdc
         self.dut['TLU']['RESET']=1
         self.dut['TLU']['TRIGGER_MODE']=3
         self.dut['TLU']['TRIGGER_LOW_TIMEOUT']=200

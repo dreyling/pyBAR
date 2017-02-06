@@ -111,7 +111,7 @@ class ExtTriggerScan(Fei4RunBase):
         if kwargs:
             self.set_scan_parameters(**kwargs)
         self.fifo_readout.start(reset_sram_fifo=False, clear_buffer=True, callback=self.handle_data, errback=self.handle_err, no_data_timeout=self.no_data_timeout)
-        self.dut['TDC']['ENABLE'] = self.enable_tdc
+        self.tdc['ENABLE'] = self.enable_tdc
         self.dut['TLU']['TRIGGER_COUNTER'] = 0
         if self.max_triggers:
             self.dut['TLU']['MAX_TRIGGERS'] = self.max_triggers
@@ -132,7 +132,7 @@ class ExtTriggerScan(Fei4RunBase):
 
     def stop_readout(self, timeout=10.0):
         self.scan_timeout_timer.cancel()
-        self.dut['TDC']['ENABLE'] = False
+        self.tdc['ENABLE'] = False
         self.dut['CMD']['EN_EXT_TRIGGER'] = False
         self.fifo_readout.stop(timeout=timeout)
 
