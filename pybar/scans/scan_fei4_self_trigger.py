@@ -93,10 +93,8 @@ class FEI4SelfTriggerScan(Fei4RunBase):
         self.register_utils.send_commands(commands)
 
     def start_readout(self, **kwargs):
+        super(FEI4SelfTriggerScan, self).start_readout()
         self.connect_cancel(["stop"])
-        if kwargs:
-            self.set_scan_parameters(**kwargs)
-        self.fifo_readout.start(reset_sram_fifo=False, clear_buffer=True, callback=self.handle_data, errback=self.handle_err, no_data_timeout=self.no_data_timeout)
         self.set_self_trigger(enable=True)
 
         def timeout():
@@ -111,10 +109,10 @@ class FEI4SelfTriggerScan(Fei4RunBase):
             self.scan_timeout_timer.start()
 
     def stop_readout(self, timeout=10.0):
-        self.connect_cancel(["abort"])
-        self.set_self_trigger(enable=False)
         self.scan_timeout_timer.cancel()
-        self.fifo_readout.stop(timeout=timeout)
+        self.set_self_trigger(enable=False)
+        super(FEI4SelfTriggerScan, self).stop_readout(timeout=timeout)
+        self.connect_cancel(["abort"])
 
 
 if __name__ == "__main__":

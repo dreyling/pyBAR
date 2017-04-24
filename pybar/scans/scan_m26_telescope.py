@@ -239,9 +239,8 @@ class M26TelescopeScan(Fei4RunBase):
         #    analyze_raw_data.plot_histograms()
 
     def start_readout(self, **kwargs):
-        if kwargs:
-            self.set_scan_parameters(**kwargs)
-        self.fifo_readout.start(reset_sram_fifo=False, clear_buffer=True, callback=self.handle_data, errback=self.handle_err, no_data_timeout=self.no_data_timeout)
+        super(M26TelescopeScan, self).start_readout()
+        self.connect_cancel(["stop"])
         # self.tdc['ENABLE'] = self.enable_tdc
         self.dut['TLU']['RESET'] = 1
         self.dut['TLU']['TRIGGER_MODE'] = 3
@@ -290,7 +289,8 @@ class M26TelescopeScan(Fei4RunBase):
         self.dut['M26_RX4'].set_en(False)
         self.dut['M26_RX5'].set_en(False)
         self.dut['M26_RX6'].set_en(False)
-        self.fifo_readout.stop(timeout=timeout)
+        super(M26TelescopeScan, self).stop_readout(timeout=timeout)
+        self.connect_cancel(["abort"])
 
 
 if __name__ == "__main__":
