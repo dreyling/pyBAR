@@ -86,6 +86,11 @@ firmware/mmc3_beast_eth/vivado/*
 firmware/mmc3_beast_eth/src/SiTCP
 !firmware/mmc3_beast_eth/vivado/*.xpr
 
+# MMC3 8-chip firmware
+firmware/mmc3_quad_eth/vivado/*
+firmware/mmc3_quad_eth/src/SiTCP
+!firmware/mmc3_quad_eth/vivado/*.xpr
+
 # Simulation output
 sim_build
 
