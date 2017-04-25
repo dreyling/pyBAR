@@ -4,7 +4,7 @@ import numpy as np
 import progressbar
 from collections import deque
 
-from pybar.daq.readout_utils import get_col_row_array_from_data_record_array, convert_data_array, data_array_from_data_iterable, is_fe_word, is_data_record, logical_and
+from pybar.daq.readout_utils import get_col_row_array_from_data_record_array, convert_data_array, data_array_from_data_iterable, is_data_record, logical_and
 # from pybar.daq.readout_utils import data_array_from_data_iterable
 # from pybar_fei4_interpreter.data_interpreter import PyDataInterpreter
 # from pybar_fei4_interpreter.data_histograming import PyDataHistograming
@@ -158,7 +158,8 @@ class ThresholdBaselineTuning(Fei4RunBase):
                             except ValueError:
                                 pass
                 # use Numpy for analysis and histogramming
-                col_arr, row_arr = convert_data_array(data_array_from_data_iterable(self.fifo_readout.data), filter_func=logical_and(is_fe_word, is_data_record), converter_func=get_col_row_array_from_data_record_array)
+                filter_func = logical_and(self.raw_data_file._filter_funcs[self.current_module_handle], is_data_record)
+                col_arr, row_arr = convert_data_array(data_array_from_data_iterable(self.fifo_readout.data), filter_func=filter_func, converter_func=get_col_row_array_from_data_record_array)
                 occ_hist, _, _ = np.histogram2d(col_arr, row_arr, bins=(80, 336), range=[[1, 80], [1, 336]])
                 occ_mask = np.zeros(shape=occ_hist.shape, dtype=np.dtype('>u1'))
 

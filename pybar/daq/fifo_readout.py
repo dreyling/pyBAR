@@ -8,7 +8,7 @@ import sys
 import numpy as np
 
 from pybar.utils.utils import get_float_time
-from pybar.daq.readout_utils import is_fe_word, is_data_record, is_data_header, logical_or, logical_and, convert_data_iterable
+from pybar.daq.readout_utils import is_fe_word, is_data_record, is_data_header, logical_or, logical_and, convert_data_iterable, convert_data_array
 
 
 data_iterable = ("data", "timestamp_start", "timestamp_stop", "error")
@@ -43,8 +43,10 @@ class FifoReadout(object):
         self.worker_thread = None
         self.watchdog_thread = None
         self.fill_buffer = False
-        self.filter = None
-        self.converter = None
+        self.filter_func = None
+        self.converter_func = None
+        self.enabled_fe_channels = None
+        self.enabled_m26_channels = None
         self.readout_interval = 0.05
         self._moving_average_time_period = 10.0
         self._data_deque = deque()
@@ -89,9 +91,11 @@ class FifoReadout(object):
             return None
         return result / float(self._moving_average_time_period)
 
-    def start(self, callback=None, errback=None, reset_rx=False, reset_sram_fifo=False, clear_buffer=False, fill_buffer=False, no_data_timeout=None, filter=None, converter=None):
-        self.filter = filter
-        self.converter = converter
+    def start(self, callback=None, errback=None, reset_rx=False, reset_sram_fifo=False, clear_buffer=False, fill_buffer=False, no_data_timeout=None, filter_func=None, converter_func=None, enabled_fe_channels=None, enabled_m26_channels=None):
+        self.filter_func = filter_func
+        self.converter_func = converter_func
+        self.enabled_fe_channels = enabled_fe_channels
+        self.enabled_m26_channels = enabled_m26_channels
         if self._is_running:
             raise RuntimeError('Readout already running: use stop() before start()')
         self._is_running = True
@@ -157,18 +161,20 @@ class FifoReadout(object):
         logging.info('Data queue size: %d', len(self._data_deque))
         logging.info('SRAM FIFO size: %d', self.dut['SRAM']['FIFO_SIZE'])
         # FEI4
+        enable_status = self.get_rx_enable_status()
         sync_status = self.get_rx_sync_status()
         discard_count = self.get_rx_fifo_discard_count()
-        error_count = self.get_rx_8b10b_error_count()
+        error_count = self.get_rx_8b10b_error_count(channels=None)
         if self.dut.get_modules('fei4_rx'):
             logging.info('FEI4 Channel:                     %s', " | ".join([channel.name.rjust(3) for channel in self.dut.get_modules('fei4_rx')]))
+            logging.info('FEI4 RX enable:                   %s', " | ".join(["YES".rjust(3) if status is True else "NO".rjust(3) for status in enable_status]))
             logging.info('FEI4 RX sync:                     %s', " | ".join(["YES".rjust(3) if status is True else "NO".rjust(3) for status in sync_status]))
             logging.info('FEI4 RX FIFO discard counter:     %s', " | ".join([repr(count).rjust(3) for count in discard_count]))
             logging.info('FEI4 RX FIFO 8b10b error counter: %s', " | ".join([repr(count).rjust(3) for count in error_count]))
         if not any(sync_status) or any(discard_count) or any(error_count):
             logging.warning('FEI4 RX errors detected')
         # Mimosa26
-        m26_discard_count = self.get_m26_rx_fifo_discard_count()
+        m26_discard_count = self.get_m26_rx_fifo_discard_count(channels=None)
         if self.dut.get_modules('m26_rx'):
             logging.info('M26 Channel:                 %s', " | ".join([channel.name.rjust(3) for channel in self.dut.get_modules('m26_rx')]))
             logging.info('M26 RX FIFO discard counter: %s', " | ".join([repr(count).rjust(7) for count in m26_discard_count]))
@@ -230,7 +236,7 @@ class FifoReadout(object):
                     break
                 else:
                     # filter and do the conversion
-                    converted_data_tuple = convert_data_iterable((data_tuple,), filter_func=self.filter, converter_func=self.converter)[0]
+                    converted_data_tuple = convert_data_iterable((data_tuple,), filter_func=self.filter_func, converter_func=self.converter_func)[0]
                     if self.callback:
                         try:
                             self.callback(converted_data_tuple)
@@ -245,13 +251,13 @@ class FifoReadout(object):
         logging.debug('Starting %s', self.watchdog_thread.name)
         while True:
             try:
-                if not any(self.get_rx_sync_status()):
+                if not all(self.get_rx_sync_status(channels=self.enabled_fe_channels)):
                     raise RxSyncError('FEI4 RX sync error')
-                if any(self.get_rx_8b10b_error_count()):
+                if any(self.get_rx_8b10b_error_count(channels=self.enabled_fe_channels)):
                     raise EightbTenbError('FEI4 RX 8b10b error(s) detected')
-                if any(self.get_rx_fifo_discard_count()):
+                if any(self.get_rx_fifo_discard_count(channels=self.enabled_fe_channels)):
                     raise FifoError('FEI4 RX FIFO discard error(s) detected')
-                if any(self.get_m26_rx_fifo_discard_count()):
+                if any(self.get_m26_rx_fifo_discard_count(channels=self.enabled_m26_channels)):
                     raise FifoError('M26 RX FIFO discard error(s) detected')
             except Exception:
                 self.errback(sys.exc_info())
@@ -259,7 +265,7 @@ class FifoReadout(object):
                 break
         logging.debug('Stopped %s', self.watchdog_thread.name)
 
-    def read_data(self):
+    def read_data(self, filter_func=None, converter_func=None):
         '''Read SRAM and return data array
 
         Can be used without threading.
@@ -269,7 +275,9 @@ class FifoReadout(object):
         data : list
             A list of SRAM data words.
         '''
-        return self.dut['SRAM'].get_data()
+        data = self.dut['SRAM'].get_data()
+        data = convert_data_array(data, filter_func=None, converter_func=converter_func)
+        return data
 
     def update_timestamp(self):
         curr_time = get_float_time()
@@ -288,7 +296,7 @@ class FifoReadout(object):
         sleep(0.2)  # sleep here for a while
         fifo_size = self.dut['SRAM']['FIFO_SIZE']
         if fifo_size != 0:
-            logging.warning('SRAM FIFO not empty after reset: size = %i', fifo_size)
+            logging.warning('FIFO not empty after reset: size = %i', fifo_size)
 
     def reset_rx(self, channels=None):
         logging.info('Resetting RX')
@@ -297,6 +305,12 @@ class FifoReadout(object):
         else:
             filter(lambda channel: channel.RX_RESET, self.dut.get_modules('fei4_rx'))
         sleep(0.1)  # sleep here for a while
+
+    def get_rx_enable_status(self, channels=None):
+        if channels:
+            return map(lambda channel: True if self.dut[channel].ENABLE_RX else False, channels)
+        else:
+            return map(lambda channel: True if channel.ENABLE_RX else False, self.dut.get_modules('fei4_rx'))
 
     def get_rx_sync_status(self, channels=None):
         if channels:

@@ -108,9 +108,8 @@ class ExtTriggerScan(Fei4RunBase):
             analyze_raw_data.plot_histograms()
 
     def start_readout(self, **kwargs):
-        if kwargs:
-            self.set_scan_parameters(**kwargs)
-        self.fifo_readout.start(reset_sram_fifo=False, clear_buffer=True, callback=self.handle_data, errback=self.handle_err, no_data_timeout=self.no_data_timeout)
+        super(ExtTriggerScan, self).start_readout()
+        self.connect_cancel(["stop"])
         self.tdc['ENABLE'] = self.enable_tdc
         self.dut['TLU']['TRIGGER_COUNTER'] = 0
         if self.max_triggers:
@@ -134,7 +133,8 @@ class ExtTriggerScan(Fei4RunBase):
         self.scan_timeout_timer.cancel()
         self.tdc['ENABLE'] = False
         self.dut['CMD']['EN_EXT_TRIGGER'] = False
-        self.fifo_readout.stop(timeout=timeout)
+        super(ExtTriggerScan, self).stop_readout(timeout=timeout)
+        self.connect_cancel(["abort"])
 
 
 if __name__ == "__main__":

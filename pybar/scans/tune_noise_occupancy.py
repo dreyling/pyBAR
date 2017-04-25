@@ -34,10 +34,6 @@ class NoiseOccupancyScan(Fei4RunBase):
         "overwrite_mask": False  # if True, overwrite existing masks
     }
 
-    # Parallel mode not supported in tunings
-    def set_scan_mode(self):
-        self.parallel = False
-
     def configure(self):
         if self.trig_count == 0:
             self.consecutive_lvl1 = (2 ** self.register.global_registers['Trig_Count']['bitlength'])
@@ -143,6 +139,7 @@ class NoiseOccupancyScan(Fei4RunBase):
             for mask in self.enable_for_mask:
                 mask_name = self.register.pixel_registers[mask]['name']
                 plot_occupancy(self.register.get_pixel_register_value(mask).T, title='%s Mask' % mask_name, z_max=1, filename=analyze_raw_data.output_pdf)
+
 
 if __name__ == "__main__":
     RunManager('../configuration.yaml').run_run(NoiseOccupancyScan)
