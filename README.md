@@ -10,15 +10,15 @@ PyBAR is *not only* targeting experienced users and developers. The easy-to-use 
 
 The features of the FPGA firmware in a nutshell:
 - supported readout hardware:
-  MIO, MIO 3.0, SEABAS2, Avnet LX9 and Digilent Nexys<sup>TM</sup>4 DDR
+  MIO, MIO 3.0/MCC, SEABAS2, Avnet LX9 and Digilent Nexys<sup>TM</sup>4 DDR
 - supported adapter cards:
   Single Chip Adapter Card, Burn-in Card (Quad Module Adapter Card) and the General Purpose Analog Card (GPAC)
-- support of up to 4 FE, simultaneous readout
+- readout of multiple FE readout chips (dul/quad module, stave), simultaneous readout (e.g., triggered readout)
 - continuous data taking (no interrupts during data taking, preserving all information)
 - automatic data to clock phase alignment on each channel individually
 - full support of EUDAQ TLU and availability of EUDAQ Producer
 
-The features of the host software in Python and C++:
+The features of the host software in Python:
 - very minimalistic interface, script based, no GUI
 - support for Windows/Linux/OSX
 - support for FE-I4A and B
@@ -26,7 +26,7 @@ The features of the host software in Python and C++:
 - full control over FE command generation
 - sending any arbitrary bit stream/configuration sequence to the FE of any desired frame length and/or format
 - readout of full FE data including timestamps, storing of the compressed data to HDF5 file
-- ultra fast raw data analysis, event-, cluster building and validity checking
+- ultra fast raw data analysis, event and cluster building and raw data validity checks
 - real-time online monitor with GUI
 - fast development and implementation of new scan algorithms
 
@@ -54,9 +54,9 @@ On Windows, the `pywin32` package is required:
   conda install pywin32
   ```
 
-[Basil](https://github.com/SiLab-Bonn/basil) (==2.4.3) is required:
+[Basil](https://github.com/SiLab-Bonn/basil) (==2.4.5) is required:
   ```
-  pip install basil_daq==2.4.3
+  pip install basil_daq==2.4.5
   ```
 
 [pyBAR FEI4 Interpreter](https://github.com/SiLab-Bonn/pyBAR_fei4_interpreter) (>=1.3.0) is required:
