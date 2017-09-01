@@ -39,16 +39,15 @@ class M26TelescopeScan(Fei4RunBase):
         "max_triggers": False,  # maximum triggers after which the scan will be stopped, in seconds
         "enable_tdc": False,  # if True, enables TDC (use RX2)
         "reset_rx_on_error": True,  # long scans have a high propability for ESD related data transmission errors; recover and continue here
-        "remote": True # if True, Powersupply remote is enabled
+        "remote": False # if True, Powersupply remote is enabled
     }
 
-    def init_dut(self): 
-        
+    def init_dut(self):
         if self.remote:
             dut = Dut('agilent_e3644a_pyserial.yaml')
             dut.init()
             status = dut['Powersupply'].get_enable()
-            time.sleep(0.15)    
+            time.sleep(0.15)
             status = status.replace("\n", "").replace("\r", "")
             status = int(status) #convert string to float in order to compare values!
             if status == 1:
@@ -64,14 +63,16 @@ class M26TelescopeScan(Fei4RunBase):
         else:
             logging.info('No remote enabled')
 
+        # What happens here?
         map(lambda channel: channel.reset(), self.dut.get_modules('m26_rx'))
         self.dut['jtag'].reset()
+        logging.info('dut jtag reset .... DONE')
 
-        if 'force_config_mimosa26' in self._conf and not self._conf['force_config_mimosa26'] and self.remote and current >= 3.3: #check if force_config is False
+        if 'm26_force_config' in self._conf and not self._conf['m26_force_config'] and self.remote and current >= 3.3:
                 logging.info('Skipping m26 configuration, m26 is already configured')
-        else:     
-            if 'm26_configuration' in self._conf and self._conf['m26_configuration']:
-                m26_config_file =  os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))), self._conf['m26_configuration'])
+        else:
+            if 'm26_config_file' in self._conf and self._conf['m26_config_file']:
+                m26_config_file =  os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))), self._conf['m26_config_file'])
 
                 logging.info('Loading m26 configuration file %s', m26_config_file)
                 self.dut.set_configuration(m26_config_file)
@@ -89,15 +90,15 @@ class M26TelescopeScan(Fei4RunBase):
                 "HEADER_REG_ALL","CONTROL_SUZE_REG_ALL","SEQUENCER_SUZE_REG_ALL","CTRL_8b10b_REG0_ALL",
                 "CTRL_8b10b_REG1_ALL"]
                 for i,ir in enumerate(irs):
-                    logging.info('Programming M26 JATG configuration reg %s', ir)
+                    logging.info('Programming M26 JTAG configuration reg %s', ir)
                     logging.debug(self.dut[ir][:])
                     self.dut['jtag'].scan_ir([BitLogic(IR[ir])]*6)
                     ret = self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
-                    
-                if self.remote:    
+
+                if self.remote:
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
-                    logging.info('Current:  %s A', current)  
+                    logging.info('Current:  %s A', current)
                 ## read JTAG  and check
                 irs=["DEV_ID_ALL","BSR_ALL","BIAS_DAC_ALL","RO_MODE1_ALL","RO_MODE0_ALL",
                    "DIS_DISCRI_ALL","LINEPAT0_REG_ALL","LINEPAT1_REG_ALL","CONTROL_PIX_REG_ALL",
@@ -106,14 +107,14 @@ class M26TelescopeScan(Fei4RunBase):
                    "CTRL_8b10b_REG1_ALL","BYPASS_ALL"]
                 ret={}
                 for i,ir in enumerate(irs):
-                    logging.info('Reading M26 JATG configuration reg %s', ir)
+                    logging.info('Reading M26 JTAG configuration reg %s', ir)
                     self.dut['jtag'].scan_ir([BitLogic(IR[ir])]*6)
                     ret[ir]= self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
-                
+
                 if self.remote:
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
-                    logging.info('Current:  %s A', current)    
+                    logging.info('Current:  %s A', current)
                 ## check
                 for k,v in ret.iteritems():
                     if k=="CTRL_8b10b_REG1_ALL":
@@ -124,11 +125,11 @@ class M26TelescopeScan(Fei4RunBase):
                         logging.error("JTAG data does not match %s get=%s set=%s"%(k,v,self.dut[k][:]))
                     else:
                         logging.info("Checking M26 JTAG %s ok"%k)
-                    
-                if self.remote:    
+
+                if self.remote:
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
-                    logging.info('Current:  %s A', current)    
+                    logging.info('Current:  %s A', current)
                 #START procedure
                 logging.info('Starting M26')
                 temp=self.dut['RO_MODE0_ALL'][:]
@@ -154,14 +155,14 @@ class M26TelescopeScan(Fei4RunBase):
                   #readback?
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]]*6)
-                
+
                 if self.remote:
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
             else:
                 logging.info('Skipping m26 configuration')
-            
+
     def configure(self):
         commands = []
         commands.extend(self.register.get_commands("ConfMode"))
@@ -265,10 +266,10 @@ class M26TelescopeScan(Fei4RunBase):
         else:
             self.dut['TLU']['MAX_TRIGGERS'] = 0  # infinity triggers
         # use this with FE-I4 connected
-        self.dut['CMD']['EN_EXT_TRIGGER'] = True
+#            self.dut['CMD']['EN_EXT_TRIGGER'] = True
         # use this if no FE-I4 is connected
-#         self.dut['TLU']['TRIGGER_ENABLE'] = True
-    
+            self.dut['TLU']['TRIGGER_ENABLE'] = True
+
         def timeout():
             try:
                 self.progressbar.finish()

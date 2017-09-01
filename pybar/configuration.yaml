@@ -1,15 +1,20 @@
 # *** hardwre setup/configuration ***
-dut : dut_mio.yaml  # DUT hardware configuration (.yaml). Change to dut_mio_gpac.yaml for GPAC support.
-dut_configuration : dut_configuration_mio.yaml  # DUT init configuration (.yaml). Change to dut_configuration_mio_gpac.yaml for GPAC support.
+dut : dut_mmc3_m26_eth.yaml  # DUT hardware configuration (.yaml). Change to dut_mio_gpac.yaml for GPAC support.
+dut_configuration : dut_configuration_mmc3_m26_eth.yaml  # DUT init configuration (.yaml). Change to dut_configuration_mio_gpac.yaml for GPAC support.
+
+# *** Mimosa config ***
+#m26_configuration : 'config/m26/mmc3_anemome_th7.yaml' 
+m26_force_config : False 
 
 # *** front-end configuration ***
 fe_configuration :  # FE configuration file, text (.cfg) or HDF5 (.h5) file. If not given, latest valid configuration (run status FINISHED) will be taken. If a number is given, configuration from run with specified number will be taken.
-fe_flavor : fei4b  # FEI4 flavor/type for initial configuration. Valid values: 'fei4a' or 'fei4b'
+fe_flavor : fei4a  # FEI4 flavor/type for initial configuration. Valid values: 'fei4a' or 'fei4b'
 chip_address :  # Chip Address for initial configuration, if not given, broadcast bit will be set
 module_id : module_test  # module identifier / name, sub-folder with given name will be created inside working_dir
 
 # *** configuration ***
-#send_data : 'tcp://127.0.0.1:5678'  # to allow incoming connections on all interfaces use 0.0.0.0
+# for the online monitor
+send_data : 'tcp://127.0.0.1:5678'  # to allow incoming connections on all interfaces use 0.0.0.0
 #send_message :
 #    status: ['CRASHED', 'ABORTED', 'STOPPED', 'FINISHED']  # run status that triggers emails
 #    subject_prefix: "pyBAR run report: "
@@ -25,14 +30,14 @@ module_id : module_test  # module identifier / name, sub-folder with given name 
 #    reset_rx_on_error : False
 #
 # *** scan specific run configuration ***
-#Fei4Tuning:
-#    enable_shift_masks : ["Enable", "C_Low", "C_High"]
-#    target_threshold : 30 # target threshold
-#    target_charge : 280 # target charge
-#    target_tot : 5 # target ToT
-#    global_iterations : 4
-#    local_iterations : 3
-#
+Fei4Tuning:
+    enable_shift_masks : ["Enable", "C_Low", "C_High"]
+    target_threshold : 30 # target threshold
+    target_charge : 280 # target charge
+    target_tot : 5 # target ToT
+    global_iterations : 4
+    local_iterations : 3
+
 #AnalogScan:
 #    scan_parameters : '[("PlsrDAC", 280)]'
 #    enable_shift_masks : ["Enable", "C_Low", "C_High"]
@@ -41,20 +46,20 @@ module_id : module_test  # module identifier / name, sub-folder with given name 
 #    scan_parameters : '[("PlsrDAC", [None, 100])]'
 #    enable_shift_masks : ["Enable", "C_Low", "C_High"]
 #
-#ExtTriggerScan:
-#    trig_count : 0
-#    trigger_latency : 232
-#    trigger_delay : 8
-#    trigger_rate_limit : 500
-#    col_span : [1, 80]
-#    row_span : [1, 336]
-#    overwrite_enable_mask : False
-#    use_enable_mask_for_imon : True
-#    no_data_timeout : 10
-#    scan_timeout : 60
-#    max_triggers : 10000
-#    enable_tdc : False
-#    reset_rx_on_error : False
+ExtTriggerScan:
+    trig_count : 0
+    trigger_latency : 232
+    trigger_delay : 0 
+    trigger_rate_limit : 500
+    col_span : [1, 80]
+    row_span : [1, 336]
+    overwrite_enable_mask : False
+    use_enable_mask_for_imon : True
+    no_data_timeout : 10
+    scan_timeout : 600
+    max_triggers : 100000
+    enable_tdc : False
+    reset_rx_on_error : False
 #
 #FEI4SelfTriggerScan:
 #    trig_count : 4

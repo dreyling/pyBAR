@@ -10,7 +10,7 @@ from pybar.scans.scan_ext_trigger import ExtTriggerScan
 from pybar.daq.readout_utils import build_events_from_raw_data, is_trigger_word
 
 import sys
-sys.path.append('/home/telescope/eudaq/python/')
+sys.path.append('/opt/eudaq1/python/')
 from PyEUDAQWrapper import PyProducer
 
 
