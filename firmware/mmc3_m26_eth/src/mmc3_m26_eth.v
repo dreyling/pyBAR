@@ -796,9 +796,16 @@ assign LED[0] = RX_READY;
 assign LED[1] = ~(|LOST_ERROR & CLK_1HZ);
 assign LED[2] = ~(|RX_8B10B_DECODER_ERR & CLK_1HZ);
 
-//ila_0 ila(
-//    .clk(CLK320),
-//    .probe0({M26_DATA1, M26_DATA0, M26_MKD, M26_CLK})
-//);
+
+// for using chipscope on the first m26 receiver
+/*
+wire [3:0] RX1;
+assign RX1 = {M26_DATA1[0], M26_DATA0[0], M26_MKD[0], M26_CLK[0]};
+
+ila_1 ila(
+    .clk(CLK320),
+    .probe0(RX1)
+);
+*/
 
 endmodule
