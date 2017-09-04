@@ -242,7 +242,7 @@ WRAP_SiTCP_GMII_XC7K_32K sitcp(
     .CLK(BUS_CLK)                    ,    // in    : System Clock >129MHz
     .RST(RST)                    ,    // in    : System reset
     // Configuration parameters
-    .FORCE_DEFAULTn(1'b0)        ,    // in    : load default parameters
+    .FORCE_DEFAULTn(1'b1)        ,    // in    : do not load default parameters
     .EXT_IP_ADDR(32'hc0a81610)            ,    // in    : IP address[31:0] //192.168.22.16
     .EXT_TCP_PORT(16'd24)        ,    // in    : TCP port #[15:0]
     .EXT_RBCP_PORT(16'd4660)        ,    // in    : RBCP port #[15:0]
