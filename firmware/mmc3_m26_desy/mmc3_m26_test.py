@@ -81,6 +81,9 @@ registers:
 
 import time
 from basil.dut import Dut
+import sys
+
+readout_channel = sys.argv[1]
 
 chip = Dut(cnfg_yaml)
 chip.init()
@@ -100,7 +103,23 @@ chip['M26_RX5'].reset()
 chip['M26_RX6'].reset()
 
 print 'get_fifo_size', chip['SRAM'].get_fifo_size()
-chls = ['M26_RX1', 'M26_RX2', 'M26_RX3', 'M26_RX4', 'M26_RX5', 'M26_RX6'] #['M26_RX1', 'M26_RX2', 'M26_RX3', 'M26_RX4', 'M26_RX5', 'M26_RX6']
+channels = ['M26_RX1', 'M26_RX2', 'M26_RX3', 'M26_RX4', 'M26_RX5', 'M26_RX6']
+if readout_channel == '0':
+    chls = [channels[0]]
+elif readout_channel == '1':
+    chls = [channels[1]]
+elif readout_channel == '2':
+    chls = [channels[2]]
+elif readout_channel == '3':
+    chls = [channels[3]]
+elif readout_channel == '4':
+    chls = [channels[4]]
+elif readout_channel == '5':
+    chls = [channels[5]]
+else:
+    chls = channels
+
+print "channels activated:", chls
 
 for ch in chls:
     chip[ch].set_en(True)
@@ -116,8 +135,17 @@ print 'XXX', ret
 ret = chip['SRAM'].get_data()
 for i, r in enumerate(ret):
     if i > 1000 and i < 1100:
+        if (r & 0x00010000) >> 16 == 1:
+            print "Frame start"
         print i, hex(r), 'id', (r & 0x00F00000) >>20, 'start', (r & 0x00010000) >> 16, 'data', hex(r & 0x000FFFFF)
 
-# DATA FORMAT
-# HEADER(2bit=0x20) + PLANEID(4bit) + 3'b000 + FRAME_START(1bit) + DATA(16bit)
+for i, r in enumerate(ret):
+    if (r & 0x00010000) >> 16 == 1:
+        print "Frame start"
+        for ii in range(4):
+
+            print i+ii, hex(ret[i+ii]), 'id', (ret[i+ii] & 0x00F00000) >>20, 'start', (ret[i+ii] & 0x00010000) >> 16, 'data', hex(ret[i+ii] & 0x000FFFFF)
+
+print "DATA FORMAT"
+print "HEADER(2bit=0x20) + PLANEID(4bit) + 3'b000 + FRAME_START(1bit) + DATA(16bit)"
 
