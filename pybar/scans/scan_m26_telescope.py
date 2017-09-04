@@ -6,7 +6,7 @@ import progressbar
 import time
 import sys
 from threading import Timer
-from collections import namedtuple, Mapping, OrderedDict
+#from collections import namedtuple, Mapping, OrderedDict
 
 from pybar.analysis.analyze_raw_data import AnalyzeRawData
 from pybar.fei4.register_utils import invert_pixel_mask, make_box_pixel_mask_from_col_row
@@ -17,6 +17,7 @@ from basil.utils.BitLogic import BitLogic
 
 from basil.dut import Dut
 
+##################################################################################
 class M26TelescopeScan(Fei4RunBase):
     '''External trigger scan with FE-I4 and up to 6 Mimosa26 telescope planes.
 
@@ -42,7 +43,9 @@ class M26TelescopeScan(Fei4RunBase):
         "remote": False # if True, Powersupply remote is enabled
     }
 
+##################################################################################
     def init_dut(self):
+        logging.info('Calling init_dut')
         if self.remote:
             dut = Dut('agilent_e3644a_pyserial.yaml')
             dut.init()
@@ -163,7 +166,9 @@ class M26TelescopeScan(Fei4RunBase):
             else:
                 logging.info('Skipping m26 configuration')
 
+##################################################################################
     def configure(self):
+        logging.info('Calling configure')
         commands = []
         commands.extend(self.register.get_commands("ConfMode"))
         # Enable
@@ -197,7 +202,9 @@ class M26TelescopeScan(Fei4RunBase):
             self.dut['M26_RX%d'%plane].reset()
             self.dut['M26_RX%d'%plane]['TIMESTAMP_HEADER']=1
 
+##################################################################################
     def scan(self):
+        logging.info('Calling scan')
         # preload command
         lvl1_command = self.register.get_commands("zeros", length=self.trigger_delay)[0] + self.register.get_commands("LV1")[0] + self.register.get_commands("zeros", length=self.trigger_rate_limit)[0]
         self.register_utils.set_command(lvl1_command)
@@ -225,7 +232,9 @@ class M26TelescopeScan(Fei4RunBase):
 
         logging.info('Total amount of triggers collected: %d', self.dut['TLU']['TRIGGER_COUNTER'])
 
+##################################################################################
     def analyze(self):
+        logging.info('Calling analyze')
         pass
         #with AnalyzeRawData(raw_data_file=self.output_filename, create_pdf=True) as analyze_raw_data:
         #    analyze_raw_data.create_source_scan_hist = True
@@ -241,15 +250,18 @@ class M26TelescopeScan(Fei4RunBase):
         #    analyze_raw_data.interpreter.print_summary()
         #    analyze_raw_data.plot_histograms()
 
+##################################################################################
     def start_readout(self, *args, **kwargs):
+        logging.info('Calling start_readout')
+        
         super(M26TelescopeScan, self).start_readout(*args, **kwargs)
         #self.dut['TDC']['ENABLE'] = self.enable_tdc
-        self.dut['TLU']['RESET']=1
-        self.dut['TLU']['TRIGGER_MODE']=3
-        self.dut['TLU']['TRIGGER_LOW_TIMEOUT']=200
-        self.dut['TLU']['TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES']=20
-        self.dut['TLU']['DATA_FORMAT']=2
-        self.dut['TLU']['TRIGGER_DATA_DELAY']=8
+        self.dut['TLU']['RESET'] = 1
+        self.dut['TLU']['TRIGGER_MODE'] = 3
+        self.dut['TLU']['TRIGGER_LOW_TIMEOUT'] = 200
+        self.dut['TLU']['TRIGGER_HANDSHAKE_ACCEPT_WAIT_CYCLES'] = 20
+        self.dut['TLU']['DATA_FORMAT'] = 2
+        self.dut['TLU']['TRIGGER_DATA_DELAY'] = 8
         self.dut['TLU']['TRIGGER_COUNTER'] = 0
         self.dut['TLU']['TRIGGER_VETO_SELECT'] = 0
         self.dut['TLU']['EN_TLU_VETO'] = 0
@@ -281,7 +293,10 @@ class M26TelescopeScan(Fei4RunBase):
         if self.scan_timeout:
             self.scan_timeout_timer.start()
 
+##################################################################################
     def stop_readout(self, timeout=10.0):
+        logging.info('Calling stop_readout')
+        
         self.scan_timeout_timer.cancel()
         self.dut['TLU']['TRIGGER_ENABLE'] = False
         self.dut['CMD']['EN_EXT_TRIGGER'] = False
@@ -294,5 +309,7 @@ class M26TelescopeScan(Fei4RunBase):
         super(M26TelescopeScan, self).stop_readout(timeout=timeout)
 
 
+##################################################################################
+##################################################################################
 if __name__ == "__main__":
     RunManager('../configuration.yaml').run_run(M26TelescopeScan)
