@@ -1,28 +1,28 @@
 import os
 import inspect
 import logging
-import numpy as np
-import progressbar
 import time
-import sys
 from threading import Timer
-#from collections import namedtuple, Mapping, OrderedDict
 
-from pybar.analysis.analyze_raw_data import AnalyzeRawData
+import progressbar
+import numpy as np
+
+from basil.utils.BitLogic import BitLogic
+from basil.dut import Dut
+
+#from pybar.analysis.analyze_raw_data import AnalyzeRawData
 from pybar.fei4.register_utils import invert_pixel_mask, make_box_pixel_mask_from_col_row
 from pybar.fei4_run_base import Fei4RunBase
 from pybar.run_manager import RunManager
 
-from basil.utils.BitLogic import BitLogic
-
-from basil.dut import Dut
 
 ##################################################################################
 class M26TelescopeScan(Fei4RunBase):
     '''External trigger scan with FE-I4 and up to 6 Mimosa26 telescope planes.
     For use with external scintillator (user RX0), TLU (use RJ45), FE-I4 HitOR (USBpix self-trigger).
     Note:
-    Set up trigger in DUT configuration file (e.g. dut_configuration_mio.yaml).
+    Set up trigger in DUT configuration file (e.g. dut_configuration_mmc3_m26_eth.yaml).
+    Only Agilent E3644a Power supply for current feedback is supported
     '''
     _default_run_conf = {
         # FEI4 settings
@@ -34,7 +34,7 @@ class M26TelescopeScan(Fei4RunBase):
         "row_span": [1, 336],  # defining active row interval, 2-tuple, from 1 to 336
         "overwrite_enable_mask": False,  # if True, use col_span and row_span to define an active region regardless of the Enable pixel register. If False, use col_span and row_span to define active region by also taking Enable pixel register into account.
         "use_enable_mask_for_imon": True,  # if True, apply inverted Enable pixel mask to Imon pixel mask
-        "no_data_timeout": 120,  # no data timeout after which the scan will be aborted, in seconds
+        "no_data_timeout": 60,  # no data timeout after which the scan will be aborted, in seconds
         "scan_timeout": 60,  # timeout for scan after which the scan will be stopped, in seconds
         "max_triggers": False,  # maximum triggers after which the scan will be stopped, in seconds
         "enable_tdc": False,  # if True, enables TDC (use RX2)
@@ -50,9 +50,7 @@ class M26TelescopeScan(Fei4RunBase):
 
         # initialization for power supply
         if self.remote:
-            dut = Dut('agilent_e3644a_pyserial.yaml')
-            dut.init()
-            status = dut['Powersupply'].get_enable()
+            status = self.dut['Powersupply'].get_enable()
             time.sleep(0.15)
             status = status.replace("\n", "").replace("\r", "")
             status = int(status) #convert string to float in order to compare values!
@@ -63,7 +61,7 @@ class M26TelescopeScan(Fei4RunBase):
                 # TODO: STOP READOUT!!!
                 #abort(msg='Scan timeout was reached')
                 #stop_current_run(msg='OFF')
-            current = dut['Powersupply'].get_current()
+            current = self.dut['Powersupply'].get_current()
             current = current.replace("\n", "").replace("\r", "")
             logging.info('Current:  %s A', current)
             current = float(current)  # convert string to float in order to compare values!
@@ -103,7 +101,7 @@ class M26TelescopeScan(Fei4RunBase):
                     ret = self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
 
                 if self.remote:
-                    current = dut['Powersupply'].get_current()
+                    current = self.dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
                 ## read JTAG  and check
@@ -119,7 +117,7 @@ class M26TelescopeScan(Fei4RunBase):
                     ret[ir]= self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
 
                 if self.remote:
-                    current = dut['Powersupply'].get_current()
+                    current = seldf.dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
                 ## check
@@ -134,7 +132,7 @@ class M26TelescopeScan(Fei4RunBase):
                         logging.info("Checking M26 JTAG %s ok"%k)
 
                 if self.remote:
-                    current = dut['Powersupply'].get_current()
+                    current = self.dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
                 #START procedure
@@ -146,7 +144,7 @@ class M26TelescopeScan(Fei4RunBase):
                     reg['JTAG_Start']=0
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #JTAG start
+                # JTAG start
                 for reg in self.dut["RO_MODE0_ALL"]["RO_MODE0"]:
                     reg['JTAG_Start']=1
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
@@ -155,16 +153,16 @@ class M26TelescopeScan(Fei4RunBase):
                     reg['JTAG_Start']=0
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #write original configuration
+                # write original configuration
                 self.dut['RO_MODE0_ALL'][:]=temp
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #readback?
+                # readback
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]]*6)
 
                 if self.remote:
-                    current = dut['Powersupply'].get_current()
+                    current = self.dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
             else:
