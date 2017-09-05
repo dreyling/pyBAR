@@ -13,16 +13,23 @@ The Firmware make use of [Basil](https://github.com/SiLab-Bonn/basil) framework 
 * Enclustra Mercury KX1 plus carrier board
 * powering via USB or 5V power supply due to jumper configuration
 * Jumpers for RJ45 ports on the carrier board, see pictures
-* Bonn cables: The original firmware is written to use the Mimosa pin assignment on the AUX board side and the standard Ethernet pn assignment on the MMC3 side. Thus, modified cables has to be used: Swap on one side Pin 4 and 6.
+* Bonn cables: The original firmware is written to use the Mimosa pin assignment on the AUX board side and the standard Ethernet pn assignment on the MMC3 side. Thus, modified cables has to be used: Swap only on one side only Pin 4 and 6.
+* attached heatsink to FPGA chip
+    * temperature w/o heatsink:  °C (stand-by), °C (programmed)
+    * temperature with heatsink:  °C (stand-by), °C (programmed)
 
 ## Firmware
 
 * basil and pyBAR
 * SiTCP v08
 * generated bitfiles in ```bitfiles/```
+    * ```170904_mmc3_m26_ip22subnet.bit```
+    * ```170931_mmc3_m26_eth_default.bit```
 
 ## Software
 
+* Hardware Layers: Basil
+    * fixed bug in ```basil/TL/SiTcp.py```, line 96: ```logging.warning("SiTcp:write - Invalid address %d" % hex(addr))``` has to be string wildcard ```%s```
 * DAQ: pyBAR
 * Interpretation: ```pyBAR_mimosa26_interpreter```
 
@@ -30,12 +37,12 @@ The Firmware make use of [Basil](https://github.com/SiLab-Bonn/basil) framework 
 
 * upload bitfile (Vivado plus JTAG module)
 * adjust configuration yaml-files
-* running scan: ```python scan_telescope_m26```
+* running scan: ```python scan_telescope_m26.py```
 
 ## ToDo and to test:
 
-- [ ] assemble heatsink
-- [ ] modify firmware for different IP address
-- [ ] modify firmware to use Strassbourg (1:1) cables
 - [ ] using QSPI flash for autoamtic bitfile-upload (incl. possible resistor modification of FPGA carrier board)
+- [ ] JTAGging of Mimosa26 (incl. only for one sensor w/o JTAG distr. board)
+- [ ] read-out of Agilent power supply
+- [ ] understanding: Basil hardware layer, yaml configuration and pybar software usage
 - [ ] testing ```testbeam_analysis``` 
