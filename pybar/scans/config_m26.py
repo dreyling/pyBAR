@@ -20,12 +20,13 @@ from basil.dut import Dut
 ##################################################################################
 class M26TelescopeScan(Fei4RunBase):
     '''External trigger scan with FE-I4 and up to 6 Mimosa26 telescope planes.
+
     For use with external scintillator (user RX0), TLU (use RJ45), FE-I4 HitOR (USBpix self-trigger).
+
     Note:
     Set up trigger in DUT configuration file (e.g. dut_configuration_mio.yaml).
     '''
     _default_run_conf = {
-        # FEI4 settings
         "trig_count": 0,  # FE-I4 trigger count, number of consecutive BCs, 0 means 16, from 0 to 15
         "trigger_latency": 232,  # FE-I4 trigger latency, in BCs, external scintillator / TLU / HitOR: 232, USBpix self-trigger: 220
         "trigger_delay": 8,  # trigger delay, in BCs
@@ -39,7 +40,6 @@ class M26TelescopeScan(Fei4RunBase):
         "max_triggers": False,  # maximum triggers after which the scan will be stopped, in seconds
         "enable_tdc": False,  # if True, enables TDC (use RX2)
         "reset_rx_on_error": True,  # long scans have a high propability for ESD related data transmission errors; recover and continue here
-        # M26 settings
         "remote": False # if True, Powersupply remote is enabled
     }
 
@@ -47,8 +47,6 @@ class M26TelescopeScan(Fei4RunBase):
     def init_dut(self):
         logging.info('Calling init_dut')
         #print "Is dut object there?", self.dut # this objects exists and is filled with default values
-
-        # initialization for power supply
         if self.remote:
             dut = Dut('agilent_e3644a_pyserial.yaml')
             dut.init()
@@ -57,7 +55,7 @@ class M26TelescopeScan(Fei4RunBase):
             status = status.replace("\n", "").replace("\r", "")
             status = int(status) #convert string to float in order to compare values!
             if status == 1:
-                logging.info("Output of powersupply is ON, status: %s" % status)
+                logging.info("Output of powersupply is ON, status: %s"%status)
             else:
                 logging.info("Output of powersupply is OFF, status: %s" % status)
                 # TODO: STOP READOUT!!!
@@ -70,7 +68,7 @@ class M26TelescopeScan(Fei4RunBase):
         else:
             logging.info('No remote enabled')
 
-        # object dut(m26_rx) initialization
+        # What happens here?
         map(lambda channel: channel.reset(), self.dut.get_modules('m26_rx'))
         self.dut['jtag'].reset()
         logging.info('dut jtag reset .... DONE')

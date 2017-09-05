@@ -73,7 +73,13 @@ class M26TelescopeScan(Fei4RunBase):
         # object dut(m26_rx) initialization
         map(lambda channel: channel.reset(), self.dut.get_modules('m26_rx'))
         self.dut['jtag'].reset()
+        self.dut['jtag'].reset()
         logging.info('dut jtag reset .... DONE')
+
+        self.dut['jtag'].tms_reset()
+
+        exit()
+
 
         if 'm26_force_config' in self._conf and not self._conf['m26_force_config'] and self.remote and current >= 3.3:
                 logging.info('Skipping m26 configuration, m26 is already configured')
@@ -84,29 +90,57 @@ class M26TelescopeScan(Fei4RunBase):
                 logging.info('Loading m26 configuration file %s', m26_config_file)
                 self.dut.set_configuration(m26_config_file)
 
-                IR={"BSR_ALL":'00101',"DEV_ID_ALL":'01110',"BIAS_DAC_ALL":'01111',"LINEPAT0_REG_ALL":'10000',
-                    "DIS_DISCRI_ALL":'10001',"SEQUENCER_PIX_REG_ALL":'10010',"CONTROL_PIX_REG_ALL":'10011',
-                    "LINEPAT1_REG_ALL":'10100',"SEQUENCER_SUZE_REG_ALL":'10101',"HEADER_REG_ALL":'10110',
-                    "CONTROL_SUZE_REG_ALL":'10111',
-                    "CTRL_8b10b_REG0_ALL":'11000',"CTRL_8b10b_REG1_ALL":'11001',"RO_MODE1_ALL":'11101',
-                    "RO_MODE0_ALL":'11110',
-                    "BYPASS_ALL":'11111'}
-                ## write JTAG
-                irs = ["BIAS_DAC_ALL","BYPASS_ALL","BSR_ALL","RO_MODE0_ALL","RO_MODE1_ALL",
-                "DIS_DISCRI_ALL","LINEPAT0_REG_ALL","LINEPAT1_REG_ALL","CONTROL_PIX_REG_ALL","SEQUENCER_PIX_REG_ALL",
-                "HEADER_REG_ALL","CONTROL_SUZE_REG_ALL","SEQUENCER_SUZE_REG_ALL","CTRL_8b10b_REG0_ALL",
-                "CTRL_8b10b_REG1_ALL"]
-                for i,ir in enumerate(irs):
-                    logging.info('Programming M26 JTAG configuration reg %s', ir)
-                    logging.debug(self.dut[ir][:])
-                    self.dut['jtag'].scan_ir([BitLogic(IR[ir])]*6)
-                    ret = self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
+                sensors = 6
+
+                # ir = instruction_register
+                ir_addresses = {
+                        "BSR_ALL":'00101',
+                        "DEV_ID_ALL":'01110',
+                        "BIAS_DAC_ALL":'01111',
+                        "LINEPAT0_REG_ALL":'10000',
+                        "DIS_DISCRI_ALL":'10001',
+                        "SEQUENCER_PIX_REG_ALL":'10010',
+                        "CONTROL_PIX_REG_ALL":'10011',
+                        "LINEPAT1_REG_ALL":'10100',
+                        "SEQUENCER_SUZE_REG_ALL":'10101',
+                        "HEADER_REG_ALL":'10110',
+                        "CONTROL_SUZE_REG_ALL":'10111',
+                        "CTRL_8b10b_REG0_ALL":'11000',
+                        "CTRL_8b10b_REG1_ALL":'11001',
+                        "RO_MODE1_ALL":'11101',
+                        "RO_MODE0_ALL":'11110',
+                        "BYPASS_ALL":'11111'}
+
+                # write JTAG
+                ir_names = [
+                        "BIAS_DAC_ALL",
+                        "BYPASS_ALL",
+                        "BSR_ALL",
+                        "RO_MODE0_ALL",
+                        "RO_MODE1_ALL",
+                        "DIS_DISCRI_ALL",
+                        "LINEPAT0_REG_ALL",
+                        "LINEPAT1_REG_ALL",
+                        "CONTROL_PIX_REG_ALL",
+                        "SEQUENCER_PIX_REG_ALL",
+                        "HEADER_REG_ALL",
+                        "CONTROL_SUZE_REG_ALL",
+                        "SEQUENCER_SUZE_REG_ALL",
+                        "CTRL_8b10b_REG0_ALL",
+                        "CTRL_8b10b_REG1_ALL"]
+
+                for index, ir_value in enumerate(ir_names):
+                    logging.info('Programming M26 (JTAG) register %s', ir_value)
+                    logging.debug(self.dut[ir_value][:])
+                    self.dut['jtag'].scan_ir([BitLogic(ir_adresses[ir_value])] * sensors)
+                    ret = self.dut['jtag'].scan_dr([self.dut[ir_value][:]])[0]
 
                 if self.remote:
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
-                ## read JTAG  and check
+
+                # read JTAG and check
                 irs=["DEV_ID_ALL","BSR_ALL","BIAS_DAC_ALL","RO_MODE1_ALL","RO_MODE0_ALL",
                    "DIS_DISCRI_ALL","LINEPAT0_REG_ALL","LINEPAT1_REG_ALL","CONTROL_PIX_REG_ALL",
                    "SEQUENCER_PIX_REG_ALL",
@@ -124,11 +158,12 @@ class M26TelescopeScan(Fei4RunBase):
                     logging.info('Current:  %s A', current)
                 ## check
                 for k,v in ret.iteritems():
-                    if k=="CTRL_8b10b_REG1_ALL":
+                    if k == "CTRL_8b10b_REG1_ALL":
                         pass
-                    elif k=="BSR_ALL":
-                        pass #TODO mask clock bits and check others
-                    elif self.dut[k][:]!=v:
+                    elif k == "BSR_ALL":
+                        pass 
+                        # TODO mask clock bits and check others
+                    elif self.dut[k][:] != v:
                         logging.error("JTAG data does not match %s get=%s set=%s"%(k,v,self.dut[k][:]))
                     else:
                         logging.info("Checking M26 JTAG %s ok"%k)
@@ -137,16 +172,17 @@ class M26TelescopeScan(Fei4RunBase):
                     current = dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
-                #START procedure
+
+                # START procedure
                 logging.info('Starting M26')
-                temp=self.dut['RO_MODE0_ALL'][:]
-                  #disable extstart
+                temp = self.dut['RO_MODE0_ALL'][:]
+                # disable extstart
                 for reg in self.dut["RO_MODE0_ALL"]["RO_MODE0"]:
                     reg['En_ExtStart']=0
                     reg['JTAG_Start']=0
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #JTAG start
+                # JTAG start
                 for reg in self.dut["RO_MODE0_ALL"]["RO_MODE0"]:
                     reg['JTAG_Start']=1
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
@@ -155,11 +191,11 @@ class M26TelescopeScan(Fei4RunBase):
                     reg['JTAG_Start']=0
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #write original configuration
-                self.dut['RO_MODE0_ALL'][:]=temp
+                # write original configuration
+                self.dut['RO_MODE0_ALL'][:] = temp
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]])
-                  #readback?
+                # readback?
                 self.dut['jtag'].scan_ir([BitLogic(IR['RO_MODE0_ALL'])]*6)
                 self.dut['jtag'].scan_dr([self.dut['RO_MODE0_ALL'][:]]*6)
 
