@@ -103,14 +103,6 @@ hw_drivers:
     type      : JtagGpio
     hw_driver : gpio_jtag
     size      : 8  
-######
-# start paste in 17/08/    
-#  - name      : gpio_m26 
-#    type      : gpio
-#    interface : ETH
-#    base_addr : 0xb020
-#    size      : 8
-######
 
 # for Mimosa power supply
 # The power supply that powers the Mimosa 26 plane
@@ -125,15 +117,6 @@ hw_drivers:
 ###################################################
 registers:
 ################
-#  - name        : M26_SWITCH
-#    type        : StdRegister
-#    size        : 8
-#    driver      : gpio_m26
-#    fields:
-#        - name : MKD_OUT_EN
-#          offset : 0
-#          size   : 1
-# end paste in 17/08/   
 
 # for Mimosa JTAG
   - name        : DEV_ID_ALL
