@@ -1,0 +1,11 @@
+===================================
+Configuration Memory information
+===================================
+File Format        MCS
+Interface          SPIX1
+Size               64M
+Start Address      0x00000000
+End Address        0x03FFFFFF
+
+Addr1         Addr2         Date                    File(s)
+0x00000000    0x00661EDB    Sep  4 16:20:44 2017    /opt/silab/pyBAR/firmware/mmc3_m26_desy/vivado/mmc3_m26_eth.runs/impl_1/mmc3_m26_eth.bit

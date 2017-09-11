@@ -20,11 +20,21 @@ The Firmware make use of [Basil](https://github.com/SiLab-Bonn/basil) framework 
 
 ## Firmware
 
-* basil and pyBAR
+* basil (v2.4.6) and pyBAR (development)
 * SiTCP v08
 * generated bitfiles in ```bitfiles/```
     * ```170904_mmc3_m26_ip22subnet.bit```
     * ```170931_mmc3_m26_eth_default.bit```
+    * ```170911_mmc3_m26_ip22subnet.prm``` (for memory boot)
+    * ```170911_mmc3_m26_ip22subnet.mcs``` (for memory boot)
+* setting up the memory for automatic boot
+    * generate bootable memory file(s) from a bitfile by using the Tcl command: ```write_cfgmem -format mcs -interface spix1 -size 64 -loadbit "up 0x0 /opt/silab/pyBAR/firmware/mmc3_m26_desy/vivado/mmc3_m26_eth.runs/impl_1/mmc3_m26_eth.bit" -file mmc3_m26_eth.mcs```
+        * option ```-interface spix1``` has to match the [design constraints](https://github.com/dreyling/pyBAR/blob/7ca2a5f46e5062f5f9b9d21f015741e44e7f3138/firmware/mmc3_m26_desy/src/mmc3.xdc#L238)
+        * option ```-size 64``` is given in bytes and has to match the size of the memory, here 512 Mbit
+    * add flash memory in Vivado Hardware Manager: QSPI Flash Type is S25FL512S
+    * uploading mcs- and prm-files to flash memory (right-click on memory device in Hardware manger) using the options ```Pull-Up``` for ```State of non-config mem I/O pins``` which matches the [design constraints](https://github.com/dreyling/pyBAR/blob/7ca2a5f46e5062f5f9b9d21f015741e44e7f3138/firmware/mmc3_m26_desy/src/mmc3.xdc#L102)
+    * set the jumper on the MMC3 board ```FPGA_MODE```
+    * after powering, it takes ~25 sec until the FPGA is programmed
 
 ## Software
 
