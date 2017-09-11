@@ -3,8 +3,8 @@ dut : dut_mmc3_m26_eth.yaml  # DUT hardware configuration (.yaml). Change to dut
 dut_configuration : dut_configuration_mmc3_m26_eth.yaml  # DUT init configuration (.yaml). Change to dut_configuration_mio_gpac.yaml for GPAC support.
 
 # *** Mimosa config ***
-m26_configuration : 'config/m26/mmc3_anemome_th7.yaml' 
-m26_force_config : False 
+m26_config_file : 'config/m26/mmc3_anemome_th4.yaml' 
+m26_force_config : True #False 
 
 # *** front-end configuration ***
 fe_configuration :  # FE configuration file, text (.cfg) or HDF5 (.h5) file. If not given, latest valid configuration (run status FINISHED) will be taken. If a number is given, configuration from run with specified number will be taken.

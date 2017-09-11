@@ -1,9 +1,9 @@
 ETH:
 
-FEI4_RX:
+CH0: # will be changed to FEI4_RX:
   INVERT_RX: 0
 
-CMD_FEI4:
+CMD: # will be changed to CMD_FEI4:
   OUTPUT_MODE: 0
 
 M26_RX1:
@@ -25,9 +25,11 @@ M26_RX6:
   EN: 0
   TIMESTAMP_HEADER: 0
 
-JTAG:
+#JTAG:
+jtag: {}
 
-GPIO_JTAG:
+#GPIO_JTAG:
+gpio_jtag:
   OUTPUT:
   - 1
   OUTPUT_EN:

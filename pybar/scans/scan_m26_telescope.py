@@ -40,7 +40,7 @@ class M26TelescopeScan(Fei4RunBase):
         "enable_tdc": False,  # if True, enables TDC (use RX2)
         "reset_rx_on_error": True,  # long scans have a high propability for ESD related data transmission errors; recover and continue here
         # M26 settings
-        "remote": False # if True, Powersupply remote is enabled
+        "remote": True # if True, Powersupply remote is enabled
     }
 
 ##################################################################################
@@ -53,33 +53,35 @@ class M26TelescopeScan(Fei4RunBase):
             status = self.dut['Powersupply'].get_enable()
             time.sleep(0.15)
             status = status.replace("\n", "").replace("\r", "")
-            status = int(status) #convert string to float in order to compare values!
-            if status == 1:
+            if int(status) == 1:
                 logging.info("Output of powersupply is ON, status: %s" % status)
+                current = self.dut['Powersupply'].get_current().replace("\n", "").replace("\r", "")
+                logging.info('Current: %s A', current)
             else:
                 logging.info("Output of powersupply is OFF, status: %s" % status)
-                # TODO: STOP READOUT!!!
-                #abort(msg='Scan timeout was reached')
-                #stop_current_run(msg='OFF')
-            current = self.dut['Powersupply'].get_current()
-            current = current.replace("\n", "").replace("\r", "")
-            logging.info('Current:  %s A', current)
-            current = float(current)  # convert string to float in order to compare values!
+                exit()
         else:
-            logging.info('No remote enabled')
+            logging.info('No remote access to the power supply enabled.')
 
         # object dut(m26_rx) initialization
         map(lambda channel: channel.reset(), self.dut.get_modules('m26_rx'))
         self.dut['jtag'].reset()
         logging.info('dut jtag reset .... DONE')
 
-        if 'm26_force_config' in self._conf and not self._conf['m26_force_config'] and self.remote and current >= 3.3:
+        # test
+        #self.dut['jtag'].reset()
+        #self.dut['jtag'].tms_reset()
+        #exit()
+        # test
+
+        if 'm26_force_config' in self._conf and not self._conf['m26_force_config'] and self.remote and float(current) >= 3.3:
                 logging.info('Skipping m26 configuration, m26 is already configured')
         else:
             if 'm26_config_file' in self._conf and self._conf['m26_config_file']:
                 m26_config_file =  os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))), self._conf['m26_config_file'])
 
                 logging.info('Loading m26 configuration file %s', m26_config_file)
+
                 self.dut.set_configuration(m26_config_file)
 
                 IR={"BSR_ALL":'00101',"DEV_ID_ALL":'01110',"BIAS_DAC_ALL":'01111',"LINEPAT0_REG_ALL":'10000',
@@ -117,19 +119,19 @@ class M26TelescopeScan(Fei4RunBase):
                     ret[ir]= self.dut['jtag'].scan_dr([self.dut[ir][:]])[0]
 
                 if self.remote:
-                    current = seldf.dut['Powersupply'].get_current()
+                    current = self.dut['Powersupply'].get_current()
                     current = current.replace("\n", "").replace("\r", "")
                     logging.info('Current:  %s A', current)
                 ## check
-                for k,v in ret.iteritems():
-                    if k=="CTRL_8b10b_REG1_ALL":
+                for index, value in ret.iteritems():
+                    if index == "CTRL_8b10b_REG1_ALL":
                         pass
-                    elif k=="BSR_ALL":
+                    elif index == "BSR_ALL":
                         pass #TODO mask clock bits and check others
-                    elif self.dut[k][:]!=v:
-                        logging.error("JTAG data does not match %s get=%s set=%s"%(k,v,self.dut[k][:]))
+                    elif self.dut[index][:] != value:
+                        logging.error("JTAG data does not match %s get=%s set=%s" % (index, value, self.dut[index][:]))
                     else:
-                        logging.info("Checking M26 JTAG %s ok"%k)
+                        logging.info("Checking M26 JTAG %s ok" % index)
 
                 if self.remote:
                     current = self.dut['Powersupply'].get_current()
@@ -137,7 +139,7 @@ class M26TelescopeScan(Fei4RunBase):
                     logging.info('Current:  %s A', current)
                 #START procedure
                 logging.info('Starting M26')
-                temp=self.dut['RO_MODE0_ALL'][:]
+                temp = self.dut['RO_MODE0_ALL'][:]
                   #disable extstart
                 for reg in self.dut["RO_MODE0_ALL"]["RO_MODE0"]:
                     reg['En_ExtStart']=0
